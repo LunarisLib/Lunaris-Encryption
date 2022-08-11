@@ -288,20 +288,148 @@ namespace Lunaris {
 	}
 
 
-	inline bool RSA::is_prime(const uint64_t& test) const
+
+	template<typename T>
+	const T RSA_device_custom<T>::mask = std::numeric_limits<T>::max() >> (sizeof(T) * 4); // if 8 bits, sizeof(T) == 1, move 4 bits -> sqrt(max(T))
+
+	template<typename T>
+	inline T RSA_device_custom<T>::enc(const T& num) const
+	{
+		T fin = 1;
+		T count = 0;
+		T pw = key & mask; // safety first
+		const T rm = n & mask; // safety first
+
+		while (pw) {
+			T currpw = (pw & (static_cast<T>(0b1) << count++));
+			if (!currpw) continue;
+			pw &= ~currpw;
+
+			T numc = num & mask; // safety first
+			while (currpw >>= 1) {
+				numc *= numc; // numc ^ 2
+				numc %= rm; // result = (numc ^ 2) % rm;
+			}
+			fin *= numc;
+			fin %= rm;
+		}
+
+		return fin;
+	}
+
+	template<typename T>
+	inline RSA_device_custom<T>::RSA_device_custom(const RSA_device_custom<T>& device)
+		: n(device.n), key(device.key), m_16to32(device.m_16to32)
+	{
+	}
+
+	template<typename T>
+	inline RSA_device_custom<T>::RSA_device_custom(const T& key, const T& mod, const bool enc)
+		: key(key), n(mod), m_16to32(enc)
+	{
+	}
+
+	template<typename T>
+	inline RSA_device_custom<T>::RSA_device_custom(const RSA_keys<T>& as_dec)
+		: key(as_dec.key), n(as_dec.mod), m_16to32(false)
+	{
+	}
+
+	template<typename T>
+	inline std::vector<uint8_t> RSA_device_custom<T>::transform(const uint8_t* data, const size_t len) const
+	{
+		std::vector<uint8_t> end;
+		constexpr size_t s64 = sizeof(T); // assume this is max
+		constexpr size_t s32 = sizeof(T) / 2; // so this is max rem (on other example, this was 
+		constexpr size_t s16 = sizeof(T) / 4; // and this is max real number working on
+
+		const auto pushT32 = [&](const T& num) { // num has s32 in size.
+			for (size_t k = 0; k < s32; ++k) end.push_back(static_cast<uint8_t>(num >> (8 * k))); // in 64, 32 bit, so that's it
+		};
+		const auto pushT16 = [&](const T& num) { // num has s16 in size.
+			for (size_t k = 0; k < s16; ++k) end.push_back(static_cast<uint8_t>(num >> (8 * k)));
+		};
+		const auto getT32 = [&](const size_t& at_in_T, const size_t off = 0) {
+			T _n{};
+			for (size_t k = 0; k < s32 && ((at_in_T * s32 + k + off) < len); ++k) _n |= (static_cast<T>(data[at_in_T * s32 + k + off]) << (8 * k));
+			return _n;
+		};
+		const auto getT16 = [&](const size_t& at_in_T, const size_t off = 0) {
+			T _n{};
+			for (size_t k = 0; k < s16 && ((at_in_T * s16 + k + off) < len); ++k) _n |= (static_cast<T>(data[at_in_T * s16 + k + off]) << (8 * k));
+			return _n;
+		};
+
+		if (m_16to32) {
+			T rm = static_cast<T>(len % s16); // must hold as s16
+			pushT16(rm); // first is key
+
+			for (size_t p = 0; p < ((len / s16) + (rm > 0 ? 1 : 0)); ++p) {
+				T _n = getT16(p);
+				pushT32(enc(_n));
+			}
+		}
+		else {
+			const T rm = (getT16(0));
+
+			for (size_t p = 0; p < (len / s32); ++p) {
+				const T _n = getT32(p, s16); // combine s32 (8 * s32 = s64's bit)
+				pushT16(enc(_n));// expect 1/2 of bytes of s64 by default
+			}
+
+			T rmtrash = ((s16 - rm) % s16);
+			while (rmtrash--) end.pop_back();
+		}
+
+		return end;
+	}
+
+	template<typename T>
+	inline std::vector<uint8_t> RSA_device_custom<T>::transform(const std::vector<uint8_t>& vec) const
+	{
+		return transform(vec.data(), vec.size());
+	}
+
+	template<typename T>
+	inline void RSA_device_custom<T>::transform_in(std::vector<uint8_t>& vec) const
+	{
+		vec = transform(vec);
+	}
+
+	template<typename T>
+	inline T RSA_device_custom<T>::get_key() const
+	{
+		return key;
+	}
+
+	template<typename T>
+	inline T RSA_device_custom<T>::get_mod() const
+	{
+		return n;
+	}
+
+	template<typename T>
+	inline RSA_keys<T> RSA_device_custom<T>::get_combo() const
+	{
+		return RSA_keys<T>{ key, n};
+	}
+
+	template<typename T>
+	inline bool RSA_custom<T>::is_prime(const T& test) const
 	{
 		if (test == 2 || test == 3)
 			return true;
 		if (test <= 1 || test % 2 == 0 || test % 3 == 0)
 			return false;
-		for (uint64_t i = 5; i * i <= test; i += 6) {
+		for (T i = 5; i * i <= test; i += 6) {
 			if (test % i == 0 || test % (i + 2) == 0)
 				return false;
 		}
 		return true;
 	}
 
-	inline uint64_t RSA::prime_b(uint64_t p, const bool noexc) const
+	template<typename T>
+	inline T RSA_custom<T>::prime_b(T p, const bool noexc) const
 	{
 		while (!is_prime(--p) && p > 2);
 		if (p <= 2) {
@@ -311,16 +439,17 @@ namespace Lunaris {
 		return p;
 	}
 
-	inline uint64_t RSA::find_prime_different_max(const std::function<uint64_t(void)> randomf, const uint64_t& lim, const uint64_t* arr, const size_t len)
+	template<typename T>
+	inline T RSA_custom<T>::find_prime_different_max(const std::function<T(void)> randomf, const T& lim, const T* arr, const size_t len)
 	{
-		const auto validate = [&](const uint64_t& n) {
+		const auto validate = [&](const T& n) {
 			if (n < 2) return false;
 			if (!arr) return true;
-			for (const uint64_t* it = arr; it != (arr + len); ++it) if (*it == n) return false;
+			for (const T* it = arr; it != (arr + len); ++it) if (*it == n) return false;
 			return true;
 		};
 
-		uint64_t _t;
+		T _t;
 
 		while (1) {
 			_t = prime_b(randomf() % lim);
@@ -329,38 +458,39 @@ namespace Lunaris {
 		return 0;
 	}
 
-	inline void RSA::generate(const uint64_t& seed)
+	template<typename T>
+	inline void RSA_custom<T>::generate(const uint64_t& seed)
 	{
 		std::mt19937_64 gen(seed);
-		std::uniform_int_distribution<uint64_t> dis;
+		std::uniform_int_distribution<T> dis;
 
-		constexpr uint64_t maxx = static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()); // limit for operations. 32 bit number * 32 bit number = 64 bit number, fits uint64_t.
-		constexpr uint64_t less = static_cast<uint64_t>(std::numeric_limits<uint8_t>::max());  // minimum value trying for primes. Lowest prime possible should be bigger than this.
-		constexpr uint64_t expc = static_cast<uint64_t>(std::numeric_limits<uint16_t>::max()); // primes must fit into 16 unfortunately, so n fits in 32 and operations fit in 64.
+		constexpr T maxx = std::numeric_limits<T>::max() >> (sizeof(T) * 4); // limit for operations. 32 bit number * 32 bit number = 64 bit number, fits uint64_t.
+		constexpr T less = std::numeric_limits<T>::max() >> (sizeof(T) * 7); // minimum value trying for primes. Lowest prime possible should be bigger than this.
+		constexpr T expc = std::numeric_limits<T>::max() >> (sizeof(T) * 6); // primes must fit into 16 unfortunately, so n fits in 32 and operations fit in 64.
 
 
-		uint64_t primes[3]{ 0 };
+		T primes[3]{ 0 };
 		while ((primes[0] * primes[1]) < expc) { // force 16 bit minimum for N!
 			for (auto& i : primes) { i = find_prime_different_max([&] {return less + (dis(gen) % (expc - less - 1)); }, expc, primes, std::size(primes)); }
 		}
 
 		// has primes from here. Random primes, probably.
 
-		n = static_cast<uint32_t>(primes[0] * primes[1]); // there's no DOUBT this is > than 16 bit and < than 32. This is A MUST because numbers later are % this, so this > 16 bit for functional purposes.
-		if (n < expc) throw std::runtime_error("N must be more than 16 bit, but it isn't somehow. Please call for help!"); // I did this anyway (read line above kekw)
-		e = static_cast<uint32_t>(primes[2]);
+		n = (primes[0] * primes[1]); // there's no DOUBT this is > than 16 bit and < than 32. This is A MUST because numbers later are % this, so this > 16 bit for functional purposes.
+		if (n < expc) throw std::runtime_error("N must be more than 1/4 of the bits of T, but it isn't somehow. Please call for help!"); // I did this anyway (read line above kekw)
+		e = (primes[2]) & maxx;
 
-		const uint64_t phi = ((primes[0] - 1) * (primes[1] - 1));
+		const T phi = ((primes[0] - 1) * (primes[1] - 1));
 
 		{
-			uint64_t k = 1;
-			uint64_t tmpp = 0;
+			T k = 1;
+			T tmpp = 0;
 			while (1) {
 				if (((k * phi + 1) % e) == 0) {
 					if (((tmpp = (k * phi + 1) / e) % phi) == 0) continue;
 
 					if (tmpp > maxx) throw std::runtime_error("P value must not be bigger than 32 bits. Math failed internally :("); // the numbers * numbers % this should be <= 32 bit so next (this * this) won't overflow 64 bit
-					p = static_cast<uint32_t>(tmpp);
+					p = tmpp;
 					break;
 				}
 				if (++k == 0) throw std::runtime_error("Fatal error generating internal RSA");
@@ -368,7 +498,8 @@ namespace Lunaris {
 		}
 	}
 
-	inline uint64_t RSA::generate()
+	template<typename T>
+	inline uint64_t RSA_custom<T>::generate()
 	{
 		std::random_device rd;
 		std::mt19937_64 gen(rd());
@@ -377,113 +508,54 @@ namespace Lunaris {
 		return gn;
 	}
 
-	inline uint64_t RSA::get_public() const
+	template<typename T>
+	inline T RSA_custom<T>::get_key() const
 	{
-		return static_cast<uint64_t>(p) | (static_cast<uint64_t>(n) << static_cast<uint64_t>(32)); // combining two 32 into a 64 single number. That's a lot of fun!
+		return p;
 	}
 
-	inline RSA_device RSA::get_encrypt() const
+	template<typename T>
+	inline T RSA_custom<T>::get_mod() const
 	{
-		return RSA_device(static_cast<uint64_t>(e) | (static_cast<uint64_t>(n) << static_cast<uint64_t>(32)), true);
+		return n;
 	}
 
-	inline RSA_device RSA::get_decrypt() const
+	template<typename T>
+	inline RSA_keys<T> RSA_custom<T>::get_combo() const
 	{
-		return RSA_device(static_cast<uint64_t>(p) | (static_cast<uint64_t>(n) << static_cast<uint64_t>(32)), false);
+		return RSA_keys<T>{ p, n };
 	}
 
-	inline uint32_t RSA_device::enc(const uint32_t& num) const
+	template<typename T>
+	inline RSA_device_custom<T> RSA_custom<T>::get_encrypt() const
 	{
-		uint64_t fin = 1;
-		uint64_t count = 0;
-		uint64_t pw = static_cast<uint64_t>(key);
-		const uint64_t rm = static_cast<uint64_t>(n);
-
-		while (pw) {
-			uint64_t currpw = (pw & (static_cast<uint64_t>(0b1) << count++));
-			if (!currpw) continue;
-			pw &= ~currpw;
-
-			uint64_t numc = static_cast<uint64_t>(num);
-			while (currpw >>= 1) {
-				numc *= numc; // numc ^ 2
-				numc %= rm; // result = (numc ^ 2) % rm;
-			}
-			fin *= numc;
-			fin %= rm;
-		}
-
-		return static_cast<uint32_t>(fin);
+		return RSA_device_custom<T>(e, n, true);
 	}
 
-	inline RSA_device::RSA_device(const RSA_device& device)
-		: n(device.n), key(device.key), m_16to32(device.m_16to32)
+	template<typename T>
+	inline RSA_device_custom<T> RSA_custom<T>::get_decrypt() const
 	{
+		return RSA_device_custom<T>(p, n, false);
 	}
 
-	inline RSA_device::RSA_device(const uint64_t& i, const bool enc)
-		: key(static_cast<uint32_t>(i)), n(static_cast<uint32_t>(i >> static_cast<uint64_t>(32))), m_16to32(enc)
-	{
-	}
-
-	inline std::vector<uint8_t> RSA_device::transform(const uint8_t* data, const size_t len) const
-	{
-		std::vector<uint8_t> end;
-
-		if (m_16to32) {
-			for (size_t p = 0; p < (len / sizeof(uint16_t)); ++p) {
-				const uint16_t _n = (static_cast<uint32_t>(data[p*2]) | (static_cast<uint32_t>(data[p*2 + 1]) << 8)); // sequential order
-				const uint32_t _f = enc(static_cast<uint32_t>(_n)); // use 16 bit number instead of 32 because n is no doubt > 16 bit, so no breaking here
-
-				for (size_t k = 0; k < 4; ++k) end.push_back((_f >> (8 * k))); // sequential order
-			}
-			if (len % 2) { // last bit hanging
-				const uint32_t _f = enc(static_cast<uint32_t>(data[len-1]));
-				for (size_t k = 0; k < 4; ++k) end.push_back((_f >> (8 * k))); // sequential order
-				end.push_back({}); // keeps % 2 == 1
-			}
-		}
-		else {
-			if ((len % 4) > 1) throw std::runtime_error("For decoding, it is expected multiple of 4 or that +1!");
-
-			for (size_t p = 0; p < (len / sizeof(uint32_t)); ++p) {
-				const uint32_t _n = (static_cast<uint32_t>(data[p*4]) | (static_cast<uint32_t>(data[p*4 + 1]) << 8) | (static_cast<uint32_t>(data[p*4 + 2]) << 16) | (static_cast<uint32_t>(data[p*4 + 3]) << 24)); // combine 4 (8 * 4 = 32 bit)
-				const uint16_t _f = static_cast<uint16_t>(enc(_n)); // expects 16 bit number here because source MUST be that.
-				end.push_back(static_cast<uint8_t>(_f));
-				end.push_back(static_cast<uint8_t>(_f >> 8));
-			}
-			if (len % 4) end.pop_back();
-		}
-
-		return end;
-	}
-
-	inline std::vector<uint8_t> RSA_device::transform(const std::vector<uint8_t>& vec) const
-	{
-		return transform(vec.data(), vec.size());
-	}
-
-	inline void RSA_device::transform_in(std::vector<uint8_t>& vec) const
-	{
-		vec = transform(vec);
-	}
-
-	inline uint64_t RSA_device::code() const
-	{
-		return static_cast<uint64_t>(key) | (static_cast<uint64_t>(n) << static_cast<uint64_t>(32));
-	}
 
 	inline Lunaris::RSA_plus::RSA_plus()
 		: Form64(0) // This is not random because I don't want people thinking this is broken without any proper config
 	{
 	}
 
-	inline void RSA_plus::as_decoder(const uint64_t& pubseed)
+	inline void RSA_plus::as_decoder(const uint64_t& pubkey, const uint64_t& modkey)
 	{
 		m_is_enc = false;
-		m_pub_cpy = pubseed;
-		crypt = std::make_unique<RSA_device>(pubseed, false); // decrypt
-		this->Form64::operator=(Form64(pubseed));
+		m_pub_cpy_p = pubkey;
+		m_pub_cpy_m = modkey;
+		crypt = std::make_unique<RSA_device>(pubkey, modkey, false); // decrypt
+		this->Form64::operator=(Form64(m_pub_cpy_p));
+	}
+
+	inline void RSA_plus::as_decoder(const RSA_keys<uint64_t>& keys)
+	{
+		as_decoder(keys.key, keys.mod);
 	}
 
 	inline void RSA_plus::as_encoder(const uint64_t& seed)
@@ -492,8 +564,9 @@ namespace Lunaris {
 		RSA fun;
 		fun.generate(seed);
 		crypt = std::make_unique<RSA_device>(fun.get_encrypt());
-		m_pub_cpy = fun.get_public();
-		this->Form64::operator=(Form64(m_pub_cpy)); // same as fun.get_decrypt().code(), same as get_public() current value.
+		m_pub_cpy_p = fun.get_key();
+		m_pub_cpy_m = fun.get_mod();
+		this->Form64::operator=(Form64(m_pub_cpy_p)); // same as fun.get_decrypt().code(), same as get_public() current value.
 	}
 
 	inline void RSA_plus::as_encoder()
@@ -502,13 +575,24 @@ namespace Lunaris {
 		RSA fun;
 		fun.generate();
 		crypt = std::make_unique<RSA_device>(fun.get_encrypt());
-		m_pub_cpy = fun.get_public();
-		this->Form64::operator=(Form64(m_pub_cpy)); // same as fun.get_decrypt().code(), same as get_public() current value.
+		m_pub_cpy_p = fun.get_key();
+		m_pub_cpy_m = fun.get_mod();
+		this->Form64::operator=(Form64(m_pub_cpy_p)); // same as fun.get_decrypt().code(), same as get_public() current value.
 	}
 
-	inline uint64_t RSA_plus::get_public() const
+	inline uint64_t RSA_plus::get_key() const
 	{
-		return m_pub_cpy;
+		return m_pub_cpy_p;
+	}
+
+	inline uint64_t RSA_plus::get_mod() const
+	{
+		return m_pub_cpy_m;
+	}
+
+	inline RSA_keys<uint64_t> RSA_plus::get_combo() const
+	{
+		return RSA_keys<uint64_t>{ m_pub_cpy_p, m_pub_cpy_m };
 	}
 
 	inline bool RSA_plus::is_encoder() const
@@ -550,6 +634,11 @@ namespace Lunaris {
 		return gud;
 	}
 
+	inline RSA_plus::operator RSA_keys<uint64_t>() const
+	{
+		return get_combo();
+	}
+
 	inline RSA_plus make_encrypt_auto()
 	{
 		RSA_plus set;
@@ -557,10 +646,11 @@ namespace Lunaris {
 		return set;
 	}
 
-	inline RSA_plus make_decrypt_auto(const uint64_t& public_key)
+	inline RSA_plus make_decrypt_auto(const RSA_keys<uint64_t>& keys)
 	{
 		RSA_plus set;
-		set.as_decoder(public_key);
+		set.as_decoder(keys);
 		return set;
 	}
+
 }
