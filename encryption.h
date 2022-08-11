@@ -231,7 +231,7 @@ namespace Lunaris {
 		/// </summary>
 		/// <param name="uint64_t">Key combo.</param>
 		/// <param name="bool">Work as encrypt? (Encoder do 16 bit to 32 bit, decryptor is the opposite).</param>
-		RSA_device(const uint64_t&, const bool);
+		RSA_device(const uint64_t&, const bool = false);
 		
 		/// <summary>
 		/// <para>Get a data source and transform.</para>
