@@ -225,6 +225,7 @@ namespace Lunaris {
 	template<typename T>
 	class RSA_device_custom {
 		static_assert(sizeof(T) >= 4, "Too small for operations!");
+		static_assert(std::is_unsigned_v<T>, "Must be unsigned!");
 
 		static const T mask; // must be sqrt(T) for half the bytes so ops won't get bigger than T
 		const T n, key;
@@ -302,6 +303,7 @@ namespace Lunaris {
 	template<typename T>
 	class RSA_custom {
 		static_assert(sizeof(T) >= 4, "Too small for operations!");
+		static_assert(std::is_unsigned_v<T>, "Must be unsigned!");
 
 		bool is_prime(const T&) const;
 		T prime_b(T, const bool = false) const;
