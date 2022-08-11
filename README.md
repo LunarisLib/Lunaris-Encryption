@@ -25,13 +25,15 @@ const auto dec = funky.decode(enc.data(), enc.size()); // std::vector<uint8_t>
 
 <br>
 
-## ✅ RSA (32 bits)
+## ✅ RSA (32 bits) / RSA_custom\<TYPE\>
 
-*RSA was a tough one to me. I had many issues with big numbers, trying to get the most performance with the best security possible. The maximum I got was 32 bits.*
+*RSA was a tough one to me. I had many issues with big numbers, trying to get the most performance with the best security possible. The maximum I got was 32 bits (default one is 32 bits).*
 
 *With 32 bits I can do 64 bit math and I must keep primes at 16 bits. The numbers generated are all above 16 bits randomly based on the algorithm and their primes.*
 
-*The RSA algorithm works with 16-bit input to 32-bit output. Decrypt does the opposite, of course.*
+*The RSA 32 bit algorithm works with 16-bit input to 32-bit output. Decrypt does the opposite, of course.*
+
+*RSA_custom is a version that allows your type to be the underlying type for operations. If you have a 128 bit unsigned type, RSA will be 64 bit, operations should work with 32 bit to 64 bit and so on.*
 
 *From many sources[¹](http://www.muppetlabs.com/~breadbox/txt/rsa.html)[²](https://stackoverflow.com/questions/10005124/public-private-key-encryption-tutorials)[³](https://www.thecrazyprogrammer.com/2017/03/rsa-algorithm.html), I've come up with this simple and easy thing:*
 
@@ -44,15 +46,15 @@ Lunaris::RSA_device encrypt = fun.get_encrypt(); // YOU DO ENCRYPT WITH THIS ONE
 Lunaris::RSA_device decrypt = fun.get_decrypt(); // THIS IS USED BY YOUR FRIEND ELSEWHERE!
 
 // The other way to create the DECRYPT, using the public key:
-const uint64_t public_key = fun.get_public(); // Public key is the one you give to them.
-Lunaris::RSA_device manual_decrypt(public_key, false); // false means as decrypt. IT IS IMPORTANT TO KEEP AN EYE HERE!
+const auto public_key = fun.get_combo(); // This is the public key combo, the one you give to them.
+Lunaris::RSA_device manual_decrypt(public_key); // From get_combo() this is automatically assumed decrypt
 // this should do the same as the decrypt declared before.
 
 std::vector<uint8_t> encrypted_message = encrypt.transform(str.data(), str.size()); // there are other input types
 std::vector<uint8_t> decrypted_message = decrypt.transform(encrypted_message); // should be the same as str now.
 ```
 
-*The fun part is that I merged both the public key and the remainder used in the formulas. Usually there are two numbers for RSA, I made them one! Easier, right?*
+*Custom is the same, but with \<type\> declaration.*
 
 <br>
 
