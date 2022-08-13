@@ -13,13 +13,13 @@ namespace Lunaris {
 
 #ifdef LUNARIS_ENABLE_TABLEMATCH_ENCRYPTION
 	/// <summary>
-	/// <para>TableMatch is a stupid simple algorithm that randomly creates a table from your seed (or totally random) to replace a number to another.</para>
+	/// <para>table_match is a stupid simple algorithm that randomly creates a table from your seed (or totally random) to replace a number to another.</para>
 	/// <para>It has two maps internally pointing to each other (once set).</para>
 	/// <para>WARN: Bigger the T, bigger the maps! This gets big FAST. It is FAST, but it EATS memory!</para>
 	/// </summary>
 	/// <typeparam name="T">Base type. Try uint8_t or uint16_t first. uint32_t is too big for most systems.</typeparam>
 	template<typename T>
-	class TableMatch {
+	class table_match {
 		static_assert(std::is_unsigned_v<T>, "Must be unsigned!");
 
 		std::unordered_map<T, const T*> mm_enc, mm_dec;
@@ -89,14 +89,14 @@ namespace Lunaris {
 	/// <para>By itself it's not secure, but maybe it's another step on top of something else.</para>
 	/// <para>This is the 64 bit version.</para>
 	/// </summary>
-	class Form64 {
+	class form_64 {
 		uint64_t m_seed;
 	public:
 		/// <summary>
 		/// <para>Create with a seed directly.</para>
 		/// </summary>
 		/// <param name="seed">Seed to setup for every encode/decode.</param>
-		Form64(const uint64_t& seed);
+		form_64(const uint64_t& seed);
 
 		/// <summary>
 		/// <para>Set internal seed for encode/decode operations.</para>
@@ -152,14 +152,14 @@ namespace Lunaris {
 	/// <para>By itself it's not secure, but maybe it's another step on top of something else.</para>
 	/// <para>This is the 32 bit version.</para>
 	/// </summary>
-	class Form32 {
+	class form_32 {
 		uint32_t m_seed;
 	public:
 		/// <summary>
 		/// <para>Create with a seed directly.</para>
 		/// </summary>
 		/// <param name="seed">Seed to setup for every encode/decode.</param>
-		Form32(const uint32_t& seed);
+		form_32(const uint32_t& seed);
 
 		/// <summary>
 		/// <para>Set internal seed for encode/decode operations.</para>
@@ -360,10 +360,10 @@ namespace Lunaris {
 	using RSA = RSA_custom<uint64_t>;
 
 	/// <summary>
-	/// <para>This is a simple combined RSA (32 bit) + Form64 class. This adds both fast worlds into a messy fast one.</para>
+	/// <para>This is a simple combined RSA (32 bit) + form_64 class. This adds both fast worlds into a messy fast one.</para>
 	/// <para>Hopefully this is secure enough for most not-long applications.</para>
 	/// </summary>
-	class RSA_plus : protected Form64 {
+	class RSA_plus : protected form_64 {
 		std::unique_ptr<RSA_device> crypt;
 		uint64_t m_pub_cpy_p{}, m_pub_cpy_m{};
 		bool m_is_enc{};

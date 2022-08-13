@@ -7,25 +7,25 @@ namespace Lunaris {
 #ifdef LUNARIS_ENABLE_TABLEMATCH_ENCRYPTION
 
 	template<typename T>
-	inline const T& TableMatch<T>::encode(const T& key) const
+	inline const T& table_match<T>::encode(const T& key) const
 	{
 		auto it = mm_enc.find(key);
 		if (it != mm_enc.end()) return *(it->second);
-		throw std::runtime_error("TableMatch map not generated properly!");
+		throw std::runtime_error("table_match map not generated properly!");
 		return {};
 	}
 
 	template<typename T>
-	inline const T& TableMatch<T>::decode(const T& key) const
+	inline const T& table_match<T>::decode(const T& key) const
 	{
 		auto it = mm_dec.find(key);
 		if (it != mm_dec.end()) return *(it->second);
-		throw std::runtime_error("TableMatch map not generated properly!");
+		throw std::runtime_error("table_match map not generated properly!");
 		return {};
 	}
 
 	template<typename T>
-	inline void TableMatch<T>::generate(const uint64_t seed)
+	inline void table_match<T>::generate(const uint64_t seed)
 	{
 		T p = 0;
 
@@ -55,7 +55,7 @@ namespace Lunaris {
 	}
 
 	template<typename T>
-	inline uint64_t TableMatch<T>::generate()
+	inline uint64_t table_match<T>::generate()
 	{
 		std::random_device rd;
 		std::mt19937_64 gen(rd());
@@ -65,7 +65,7 @@ namespace Lunaris {
 	}
 
 	template<typename T>
-	inline std::vector<uint8_t> TableMatch<T>::encrypt(const uint8_t* data, const size_t len) const
+	inline std::vector<uint8_t> table_match<T>::encrypt(const uint8_t* data, const size_t len) const
 	{
 		if (mm_dec.empty() || mm_dec.size() != mm_enc.size()) throw std::runtime_error("Invalid map or not generated!");
 
@@ -81,7 +81,7 @@ namespace Lunaris {
 	}
 
 	template<typename T>
-	inline std::vector<uint8_t> TableMatch<T>::decrypt(const uint8_t* data, const size_t len) const
+	inline std::vector<uint8_t> table_match<T>::decrypt(const uint8_t* data, const size_t len) const
 	{
 		if (mm_dec.empty() || mm_dec.size() != mm_enc.size()) throw std::runtime_error("Invalid map or not generated!");
 		if (len % sizeof(T)) throw std::invalid_argument("len CANNOT BE SOMETHING ELSE THAN multiple of sizeof(T)");
@@ -95,58 +95,58 @@ namespace Lunaris {
 	}
 
 	template<typename T>
-	inline void TableMatch<T>::encrypt_in(T* data, const size_t len) const
+	inline void table_match<T>::encrypt_in(T* data, const size_t len) const
 	{
 		if (mm_dec.empty() || mm_dec.size() != mm_enc.size()) throw std::runtime_error("Invalid map or not generated!");
 		for (size_t p = 0; p < len; ++p) data[p] = encode(data[p]);
 	}
 
 	template<typename T>
-	inline void TableMatch<T>::decrypt_in(T* data, const size_t len) const
+	inline void table_match<T>::decrypt_in(T* data, const size_t len) const
 	{
 		if (mm_dec.empty() || mm_dec.size() != mm_enc.size()) throw std::runtime_error("Invalid map or not generated!");
 		for (size_t p = 0; p < len; ++p) data[p] = decode(data[p]);
 	}
 
 	template<typename T>
-	inline void TableMatch<T>::encrypt_in(std::vector<T>& vec) const
+	inline void table_match<T>::encrypt_in(std::vector<T>& vec) const
 	{
 		encrypt_in(vec.data(), vec.size());
 	}
 
 	template<typename T>
-	inline void TableMatch<T>::decrypt_in(std::vector<T>& vec) const
+	inline void table_match<T>::decrypt_in(std::vector<T>& vec) const
 	{
 		decrypt_in(vec.data(), vec.size());
 	}
 
 #endif
 
-	inline Lunaris::Form64::Form64(const uint64_t& seed)
+	inline Lunaris::form_64::form_64(const uint64_t& seed)
 		: m_seed(seed)
 	{
 	}
 	
-	inline void Form64::reseed(const uint64_t& seed)
+	inline void form_64::reseed(const uint64_t& seed)
 	{
 		m_seed = seed;
 	}
 
-	inline std::vector<uint8_t> Form64::encode(const uint8_t* data, const size_t len) const
+	inline std::vector<uint8_t> form_64::encode(const uint8_t* data, const size_t len) const
 	{
 		std::vector<uint8_t> vec(data, data + len);
 		encode_in(vec.data(), vec.size());
 		return vec;
 	}
 
-	inline std::vector<uint8_t> Form64::decode(const uint8_t* data, const size_t len) const
+	inline std::vector<uint8_t> form_64::decode(const uint8_t* data, const size_t len) const
 	{
 		std::vector<uint8_t> vec(data, data + len);
 		decode_in(vec.data(), vec.size());
 		return vec;
 	}
 
-	inline void Form64::encode_in(uint8_t* data, const size_t len) const
+	inline void form_64::encode_in(uint8_t* data, const size_t len) const
 	{
 		std::mt19937_64 gen(m_seed);
 
@@ -173,7 +173,7 @@ namespace Lunaris {
 		}
 	}
 
-	inline void Form64::decode_in(uint8_t* data, const size_t len) const
+	inline void form_64::decode_in(uint8_t* data, const size_t len) const
 	{
 		std::mt19937_64 gen(m_seed);
 
@@ -200,42 +200,42 @@ namespace Lunaris {
 		}
 	}
 
-	inline void Form64::encode_in(std::vector<uint8_t>& vec) const
+	inline void form_64::encode_in(std::vector<uint8_t>& vec) const
 	{
 		encode_in(vec.data(), vec.size());
 	}
 
-	inline void Form64::decode_in(std::vector<uint8_t>& vec) const
+	inline void form_64::decode_in(std::vector<uint8_t>& vec) const
 	{
 		decode_in(vec.data(), vec.size());
 	}
 
 
-	inline Lunaris::Form32::Form32(const uint32_t& seed)
+	inline Lunaris::form_32::form_32(const uint32_t& seed)
 		: m_seed(seed)
 	{
 	}
 
-	inline void Form32::reseed(const uint32_t& seed)
+	inline void form_32::reseed(const uint32_t& seed)
 	{
 		m_seed = seed;
 	}
 
-	inline std::vector<uint8_t> Form32::encode(const uint8_t* data, const size_t len) const
+	inline std::vector<uint8_t> form_32::encode(const uint8_t* data, const size_t len) const
 	{
 		std::vector<uint8_t> vec(data, data + len);
 		encode_in(vec.data(), vec.size());
 		return vec;
 	}
 
-	inline std::vector<uint8_t> Form32::decode(const uint8_t* data, const size_t len) const
+	inline std::vector<uint8_t> form_32::decode(const uint8_t* data, const size_t len) const
 	{
 		std::vector<uint8_t> vec(data, data + len);
 		decode_in(vec.data(), vec.size());
 		return vec;
 	}
 
-	inline void Form32::encode_in(uint8_t* data, const size_t len) const
+	inline void form_32::encode_in(uint8_t* data, const size_t len) const
 	{
 		std::mt19937 gen(m_seed);
 
@@ -256,7 +256,7 @@ namespace Lunaris {
 		}
 	}
 
-	inline void Form32::decode_in(uint8_t* data, const size_t len) const
+	inline void form_32::decode_in(uint8_t* data, const size_t len) const
 	{
 		std::mt19937 gen(m_seed);
 
@@ -277,12 +277,12 @@ namespace Lunaris {
 		}
 	}
 
-	inline void Form32::encode_in(std::vector<uint8_t>& vec) const
+	inline void form_32::encode_in(std::vector<uint8_t>& vec) const
 	{
 		encode_in(vec.data(), vec.size());
 	}
 
-	inline void Form32::decode_in(std::vector<uint8_t>& vec) const
+	inline void form_32::decode_in(std::vector<uint8_t>& vec) const
 	{
 		decode_in(vec.data(), vec.size());
 	}
@@ -540,7 +540,7 @@ namespace Lunaris {
 
 
 	inline Lunaris::RSA_plus::RSA_plus()
-		: Form64(0) // This is not random because I don't want people thinking this is broken without any proper config
+		: form_64(0) // This is not random because I don't want people thinking this is broken without any proper config
 	{
 	}
 
@@ -550,7 +550,7 @@ namespace Lunaris {
 		m_pub_cpy_p = pubkey;
 		m_pub_cpy_m = modkey;
 		crypt = std::make_unique<RSA_device>(pubkey, modkey, false); // decrypt
-		this->Form64::operator=(Form64(m_pub_cpy_p));
+		this->form_64::operator=(form_64(m_pub_cpy_p));
 	}
 
 	inline void RSA_plus::as_decoder(const RSA_keys<uint64_t>& keys)
@@ -566,7 +566,7 @@ namespace Lunaris {
 		crypt = std::make_unique<RSA_device>(fun.get_encrypt());
 		m_pub_cpy_p = fun.get_key();
 		m_pub_cpy_m = fun.get_mod();
-		this->Form64::operator=(Form64(m_pub_cpy_p)); // same as fun.get_decrypt().code(), same as get_public() current value.
+		this->form_64::operator=(form_64(m_pub_cpy_p)); // same as fun.get_decrypt().code(), same as get_public() current value.
 	}
 
 	inline void RSA_plus::as_encoder()
@@ -577,7 +577,7 @@ namespace Lunaris {
 		crypt = std::make_unique<RSA_device>(fun.get_encrypt());
 		m_pub_cpy_p = fun.get_key();
 		m_pub_cpy_m = fun.get_mod();
-		this->Form64::operator=(Form64(m_pub_cpy_p)); // same as fun.get_decrypt().code(), same as get_public() current value.
+		this->form_64::operator=(form_64(m_pub_cpy_p)); // same as fun.get_decrypt().code(), same as get_public() current value.
 	}
 
 	inline uint64_t RSA_plus::get_key() const
@@ -608,14 +608,14 @@ namespace Lunaris {
 			push.clear();
 
 			if (is_encoder()) {
-				auto venc = this->Form64::encode(data, len);
+				auto venc = this->form_64::encode(data, len);
 				push.insert(push.end(), std::make_move_iterator(venc.begin()), std::make_move_iterator(venc.end()));
 				crypt->transform_in(push);
 			}
 			else { // inverse order
 				push = std::vector<uint8_t>(data, data + len);
 				crypt->transform_in(push);
-				push = this->Form64::decode(push.data(), push.size());
+				push = this->form_64::decode(push.data(), push.size());
 			}
 		}
 		catch (...) {

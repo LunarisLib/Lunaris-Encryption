@@ -6,16 +6,16 @@
 
 <br>
 
-## ✅ Form32 & Form64 (Formula32 and Formula64)
+## ✅ Form_32 & Form_64 (Formula32 and Formula64)
 
 ```cpp
-// The Form32 and Form64 look the same, but one uses uint32_t and the other uint64_t
-Lunaris::Form32 fun32(5435); // random number here
-Lunaris::Form64 fun64(9965); // random number here
+// The form_32 and form_64 look the same, but one uses uint32_t and the other uint64_t
+Lunaris::form_32 fun32(5435); // random number here
+Lunaris::form_64 fun64(9965); // random number here
 ```
 *Form**XX** are random-based "encryption" methods. This is within quotes because in security there's almost nothing. They shuffle randomly stuff based on a seed everytime you call `encode()` and do the opposite with `decode()`, like:*
 ```cpp
-Lunaris::Form64 funky(55); // put RANDOM on a real thing, not static number. This is an EXAMPLE!
+Lunaris::form_64 funky(55); // put RANDOM on a real thing, not static number. This is an EXAMPLE!
 const std::basic_string<unsigned char> str = (unsigned char*)"This is a fancy text to cryptograph. 0123456798! Yes!";
 const auto enc = funky.encode(str.data(), str.length()); // std::vector<uint8_t>
 const auto dec = funky.decode(enc.data(), enc.size()); // std::vector<uint8_t>
@@ -58,11 +58,11 @@ std::vector<uint8_t> decrypted_message = decrypt.transform(encrypted_message); /
 
 <br>
 
-## ✅ RSA_plus (32 bits RSA + Form64)
+## ✅ RSA_plus (32 bits RSA + Form_64)
 
 *As the title suggest, this is a simple combo of both. Someone expecting for a simple RSA will think "what is happening in here?".*
 
-*So, RSA works with 16-bit words, Form64 up to 64-bit, so this is a funky way to mess numbers around. They use the same random-generated key, so you still have only one `uint64_t` key! Isn't that awesome?*
+*So, RSA works with 16-bit words, form_64 up to 64-bit, so this is a funky way to mess numbers around. They use the same random-generated key, so you still have only one `uint64_t` key! Isn't that awesome?*
 
 *I added some shortcuts to make it even easier:*
 ```cpp
