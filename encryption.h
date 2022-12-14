@@ -20,7 +20,9 @@ namespace Lunaris {
 	/// <typeparam name="T">Base type. Try uint8_t or uint16_t first. uint32_t is too big for most systems.</typeparam>
 	template<typename T>
 	class table_match {
+#ifndef LUNARIS_UNSAFE
 		static_assert(std::is_unsigned_v<T>, "Must be unsigned!");
+#endif
 
 		std::unordered_map<T, const T*> mm_enc, mm_dec;
 		uint64_t m_gen = 0;
@@ -224,8 +226,10 @@ namespace Lunaris {
 	/// </summary>
 	template<typename T>
 	class RSA_device_custom {
+#ifndef LUNARIS_UNSAFE
 		static_assert(sizeof(T) >= 4, "Too small for operations!");
 		static_assert(std::is_unsigned_v<T>, "Must be unsigned!");
+#endif
 
 		static const T mask; // must be sqrt(T) for half the bytes so ops won't get bigger than T
 		const T n, key;
@@ -302,8 +306,10 @@ namespace Lunaris {
 	/// </summary>
 	template<typename T>
 	class RSA_custom {
+#ifndef LUNARIS_UNSAFE
 		static_assert(sizeof(T) >= 4, "Too small for operations!");
 		static_assert(std::is_unsigned_v<T>, "Must be unsigned!");
+#endif
 
 		bool is_prime(const T&) const;
 		T prime_b(T, const bool = false) const;

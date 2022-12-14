@@ -2,6 +2,10 @@
 
 #include "encryption.h"
 
+// sometimes this is needed.
+#undef max
+#undef min
+
 namespace Lunaris {
 
 #ifdef LUNARIS_ENABLE_TABLEMATCH_ENCRYPTION
