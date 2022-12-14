@@ -310,12 +310,11 @@ namespace Lunaris {
 		static_assert(sizeof(T) >= 4, "Too small for operations!");
 		static_assert(std::is_unsigned_v<T>, "Must be unsigned!");
 #endif
-
+	protected:
 		bool is_prime(const T&) const;
 		T prime_b(T, const bool = false) const;
 
 		T find_prime_different_max(const std::function<T(void)> randomf, const T& lim, const T* arr, const size_t len);
-	protected:
 		T p{}, e{}, n{}; // ops max 64 bit
 	public:
 		/// <summary>
@@ -370,6 +369,7 @@ namespace Lunaris {
 	/// <para>Hopefully this is secure enough for most not-long applications.</para>
 	/// </summary>
 	class RSA_plus : protected form_64 {
+	protected:
 		std::unique_ptr<RSA_device> crypt;
 		uint64_t m_pub_cpy_p{}, m_pub_cpy_m{};
 		bool m_is_enc{};
