@@ -113,7 +113,7 @@ I added some shortcuts to make it even easier:
 ```cpp
 const std::basic_string<unsigned char> str = (unsigned char*)"Fancy programming in here! I know unsigned char is not needed, but.";
 auto enc = Lunaris::make_encrypt_auto(); // generates a random RSAPlus with key and everything!
-auto dec = Lunaris::make_decrypt_auto(enc.get_public()); // with public key, make a decryptor that easy!
+auto dec = Lunaris::make_decrypt_auto(enc.get_combo()); // with public key, make a decryptor that easy!
 std::vector<uint8_t> ee, dd;
 
 enc.transform(str.data(), str.length(), ee); // transform directly
